@@ -1,0 +1,129 @@
+---
+title: "Diabetes"
+author: "Riley Ford"
+date: "12/5/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Load packages and data:
+```{r}
+pacman::p_load(rio)
+
+
+
+data <- import("C:/Users/Riley/Desktop/R/Diabetes/RSI_Weight.xlsx", guess_max = 10159)
+head(data)
+```
+
+Data exploration:
+```{r}
+# Age Dist.
+hist(data$A1003)
+
+#% rate of diabetes
+sprintf("%% rate diabetes: %f%%",
+        table(data$A4018)[1]/(table(data$A4018)[2] + table(data$A4018)[1])*100)
+
+#% rate with consultation (rate of data, not validated)
+sprintf("%% rate with consultation: %f%%",
+        table(data$A4018A)[1]/(table(data$A4018A)[2] + table(data$A4018A)[1])*100)
+
+#% rate who test blood glucose (rate of data, not validated)
+sprintf("%% rate who regularly test blood glucose: %f%%",
+        table(data$A4018C)[1]/(table(data$A4018C)[2] + table(data$A4018C)[1])*100)
+
+```
+
+Some functions
+```{r}
+
+#Takes a data frame, a term(column name), and the term's desired output (and optional iteration length; default to 100,000) and returns a vector containing the indexes of every instance where the term has the desired out put. 
+Classify <- function(dataframe, term1, term1O, lim = 100000){
+  
+  set <- dataframe[, term1]
+  prog <- c()
+  i <- 1
+  while(i <= lim){
+    
+    if(is.na(set[i]) && i <= length(set)){
+      i = i + 1
+      next
+    }
+    else if(is.na(set[i]) && i > length(set)){
+      return(prog)
+    }
+    else{
+      if(set[i] == term1O){
+        prog <- c(prog, i)
+      }
+      i = i + 1
+    }
+  }
+  return(prog)
+}
+
+#Takes a data frame, two terms(column names), and the terms' desired output (and optional iteration length; default to 100,000) and returns a vector containing the indexes of every instance where both terms have their desired output. 
+DoubleClassify <- function(dataframe, term1, term1O, term2, term2O, lim = 100000){
+  
+  set <- dataframe[, c(term1, term2)]
+  prog <- c()
+  i <- 1
+ while(i <= lim){
+   
+   if((is.na(set[1][i,]) || is.na(set[2][i,])) && i <= length(set[[1]])){
+     i = i + 1
+     next
+   }
+   else if((is.na(set[1][i,]) || is.na(set[2][i,]))&& i > length(set[[1]])){
+     return(prog)
+   }
+   else{
+     if(set[1][i,] == term1O && set[2][i,] == term2O){
+       prog <- c(prog, i)
+     }
+     i = i + 1
+   }
+ }
+ return(prog)
+}
+
+#Takes a data frame and a vector of indexes corresponding to that data frame and returns the values of that corresponds to indexes in the column "ID".
+IDLookUp <- function(dataframe, indexVector){
+  
+  IDs <- c()
+  
+  for (i in indexVector){IDs <- c(IDs, dataframe[i, "ID"])}
+  return(IDs)
+}
+
+#example: number of respondents who have been diagnosed with diabetes and do not have regular conciliation. IDLookUp() is not necessary.
+print(length(IDLookUp(data, DoubleClassify(data, "A4018", 1, "A4018A", 2))))
+
+#takes IDs. set1 should be longer than set2.
+MistakeFinder <- function(set1, set2){
+  
+  mistakes <- c()
+  stop <- FALSE
+  
+  for(i1 in set1){
+    stop <- FALSE
+    for(i2 in set2){
+      if(i1 == i2){
+        stop <- TRUE
+        break
+      }
+    }
+    if(stop){next}
+    mistakes <- c(mistakes, i1)
+  }
+  return(mistakes)
+}
+
+
+MistakeFinder(c(1, 2, 3, 4, 5, 6, 7, 8, 9), c(1, 2, 4, 5, 6, 7, 8, 9))
+
+```
